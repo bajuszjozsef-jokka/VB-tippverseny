@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VB 2026 Tippverseny – RG-STÚDIÓ</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#1a472a;--gm:#2d6a4f;--gl:#f0faf5;--acc:#f59e0b;--red:#dc2626;--text:#1a1a1a;--muted:#666;--border:#e5e7eb;--white:#fff;--light:#f5f5f3}
+body{font-family:'Open Sans',sans-serif;background:var(--light);color:var(--text);min-height:100vh}
+input{font-family:inherit}button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* TOAST */
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--g);color:var(--white);padding:10px 22px;border-radius:20px;font-size:.85rem;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;background:linear-gradient(135deg,var(--g),var(--gm));display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--white);border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo div:first-child{font-size:3rem;margin-bottom:8px}
+.login-logo h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+.login-logo p{font-size:.82rem;color:var(--muted)}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.82rem;font-weight:700;margin-bottom:5px}
+.form-group input{width:100%;border:2px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.9rem;outline:none;transition:border .15s}
+.form-group input:focus{border-color:var(--g)}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:8px 12px;font-size:.82rem;color:var(--red);margin-bottom:12px}
+.btn-primary{width:100%;background:var(--g);color:var(--white);border:none;border-radius:8px;padding:12px;font-size:.95rem;font-weight:700}
+.btn-primary:hover{background:#143d22}
+.login-hint{text-align:center;font-size:.75rem;color:#999;margin-top:12px}
+
+/* HEADER */
+#appHeader,#adminHeader{background:linear-gradient(135deg,var(--g),var(--gm));padding:14px 20px;position:sticky;top:0;z-index:50}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
+.header-title{color:var(--white);font-weight:800;font-size:1rem}
+.header-sub{color:rgba(255,255,255,.75);font-size:.72rem}
+.btn-logout{background:rgba(255,255,255,.2);border:none;color:var(--white);padding:6px 12px;border-radius:6px;font-size:.78rem}
+.stats-row{display:flex;gap:8px;margin-top:12px}
+.stat-box{background:rgba(255,255,255,.15);border-radius:8px;padding:7px 10px;flex:1;text-align:center}
+.stat-val{color:var(--white);font-weight:800;font-size:1.1rem}
+.stat-label{color:rgba(255,255,255,.7);font-size:.65rem}
+
+/* TABS */
+.tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex}
+.tab-btn{flex:1;padding:12px;border:none;background:none;font-weight:700;font-size:.85rem;color:#999;border-bottom:3px solid transparent;transition:all .15s}
+.tab-btn.active{color:var(--g);border-bottom-color:var(--g)}
+
+/* CONTENT */
+.content{padding:16px;max-width:700px;margin:0 auto}
+
+/* GROUP SELECTOR */
+.group-scroll{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+.group-scroll::-webkit-scrollbar{display:none}
+.pill-btn{background:var(--white);color:#555;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:.8rem;font-weight:700;white-space:nowrap;transition:all .15s}
+.pill-btn.active{background:var(--g);color:var(--white);border-color:var(--g)}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:6px;margin-bottom:14px}
+.view-toggle .pill-btn{flex:1;text-align:center;border-radius:8px}
+
+/* MATCH CARD */
+.match-card{background:var(--white);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.match-meta{background:#f8f8f8;padding:6px 14px;font-size:.72rem;color:#888;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+.pts-badge{font-weight:700}
+.pts-3{color:#16a34a}.pts-1{color:#d97706}.pts-0{color:var(--red)}
+.match-body{padding:14px 16px}
+.match-teams{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.team-name{font-weight:700;flex:1;font-size:.9rem}
+.team-name.right{text-align:right}
+.team-flag{font-size:1.2rem}
+.result-badge{background:var(--g);color:var(--white);border-radius:6px;padding:3px 10px;font-weight:800;font-size:.88rem;white-space:nowrap}
+.no-result{color:#ccc;font-size:.8rem}
+.tip-section{border-top:1px solid #f0f0f0;padding-top:10px}
+.tip-label{font-size:.72rem;color:#999;font-weight:600;margin-bottom:6px}
+.tip-row{display:flex;align-items:center;gap:8px}
+.score-input{width:44px;border:2px solid var(--border);border-radius:7px;padding:7px;text-align:center;font-size:1rem;font-weight:700;outline:none;transition:border .15s}
+.score-input:focus{border-color:var(--g)}
+.colon{font-weight:700;color:#999;font-size:1.1rem}
+.btn-save{background:var(--g);color:var(--white);border:none;border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:700}
+.btn-save.saved{background:#dcfce7;color:#16a34a;border:1px solid #86efac}
+.tbd-notice{font-size:.78rem;color:#ccc;font-style:italic}
+
+/* ADMIN EXTRAS */
+.admin-input-row{border-top:1px solid #f0f0f0;padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-label{font-size:.75rem;color:#999;font-weight:600}
+.team-input{border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.8rem;width:110px}
+.btn-admin-save{background:var(--g);color:var(--white);border:none;border-radius:6px;padding:6px 14px;font-size:.78rem;font-weight:700}
+.saved-mark{font-size:.75rem;color:#16a34a;font-weight:700}
+
+/* LEADERBOARD */
+.lb-card{background:var(--white);border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.lb-header{background:var(--g);padding:14px 16px;color:var(--white);font-weight:700}
+.lb-row{padding:12px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:12px}
+.lb-row.me{background:var(--gl)}
+.rank-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0}
+.lb-name{flex:1;font-weight:700;font-size:.9rem}
+.lb-sub{font-size:.72rem;color:#999}
+.lb-pts{font-weight:800;font-size:1.2rem;color:var(--g)}
+.lb-pts-label{font-size:.72rem;color:#999}
+.lb-empty{padding:24px;text-align:center;color:#999;font-size:.88rem}
+
+/* TBD INFO BOX */
+.tbd-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px;font-size:.82rem;color:#92400e;margin-top:8px}
+.pending-box{background:var(--gl);border:1px solid #86efac;border-radius:10px;padding:16px;text-align:center;font-size:.85rem;color:#166534}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div>⚽</div>
+      <h1>VB 2026 Tippverseny</h1>
+      <p>RG-STÚDIÓ belső verseny</p>
+    </div>
+    <div class="form-group">
+      <label>Neved</label>
+      <input id="loginName" placeholder="pl. Kovács Béla" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label>Jelszó</label>
+      <input id="loginPass" type="password" placeholder="Válassz egy jelszót" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="loginError" class="error-box hidden"></div>
+    <button class="btn-primary" onclick="doLogin()">Belépés / Regisztráció</button>
+    <p class="login-hint">Új felhasználó? Írd be a neved és válassz jelszót.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen" class="hidden">
+  <div id="appHeader">
+    <div class="header-top">
+      <div><div class="header-title">⚽ VB 2026 Tippverseny</div><div class="header-sub" id="appWelcome"></div></div>
+      <button class="btn-logout" onclick="doLogout()">Kilépés</button>
+    </div>
+    <div class="stats-row" id="statsRow"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('matches',this)">⚽ Meccsek</button>
+    <button class="tab-btn" onclick="switchTab('leaderboard',this)">🏆 Rangsor</button>
+  </div>
+  <div class="content" id="appContent"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminScreen" class="hidden">
+  <div id="adminHeader">
+    <div class="header-top">
+      <div class="header-title">⚽ Admin – Eredmények</div>
+      <button class="btn-logout" onclick="doLogout()">Kilépés</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchAdminTab('group',this)">Csoportkör</button>
+    <button class="tab-btn" onclick="switchAdminTab('knockout',this)">Egyenes kiesés</button>
+  </div>
+  <div class="content" id="adminContent"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const GM=[
+  {id:"A1",g:"A",d:"2026-06-11",h:"Mexikó",a:"Dél-Afrika"},
+  {id:"A2",g:"A",d:"2026-06-11",h:"Dél-Korea",a:"Csehország"},
+  {id:"A3",g:"A",d:"2026-06-18",h:"Csehország",a:"Dél-Afrika"},
+  {id:"A4",g:"A",d:"2026-06-18",h:"Mexikó",a:"Dél-Korea"},
+  {id:"A5",g:"A",d:"2026-06-24",h:"Csehország",a:"Mexikó"},
+  {id:"A6",g:"A",d:"2026-06-24",h:"Dél-Afrika",a:"Dél-Korea"},
+  {id:"B1",g:"B",d:"2026-06-12",h:"Kanada",a:"Bosznia-Hercegovina"},
+  {id:"B2",g:"B",d:"2026-06-13",h:"Katar",a:"Svájc"},
+  {id:"B3",g:"B",d:"2026-06-18",h:"Svájc",a:"Bosznia-Hercegovina"},
+  {id:"B4",g:"B",d:"2026-06-18",h:"Kanada",a:"Katar"},
+  {id:"B5",g:"B",d:"2026-06-24",h:"Svájc",a:"Kanada"},
+  {id:"B6",g:"B",d:"2026-06-24",h:"Bosznia-Hercegovina",a:"Katar"},
+  {id:"C1",g:"C",d:"2026-06-13",h:"Brazília",a:"Marokkó"},
+  {id:"C2",g:"C",d:"2026-06-13",h:"Haiti",a:"Skócia"},
+  {id:"C3",g:"C",d:"2026-06-19",h:"Skócia",a:"Marokkó"},
+  {id:"C4",g:"C",d:"2026-06-19",h:"Brazília",a:"Haiti"},
+  {id:"C5",g:"C",d:"2026-06-24",h:"Skócia",a:"Brazília"},
+  {id:"C6",g:"C",d:"2026-06-24",h:"Marokkó",a:"Haiti"},
+  {id:"D1",g:"D",d:"2026-06-12",h:"USA",a:"Paraguay"},
+  {id:"D2",g:"D",d:"2026-06-13",h:"Ausztrália",a:"Törökország"},
+  {id:"D3",g:"D",d:"2026-06-19",h:"USA",a:"Ausztrália"},
+  {id:"D4",g:"D",d:"2026-06-19",h:"Törökország",a:"Paraguay"},
+  {id:"D5",g:"D",d:"2026-06-25",h:"Törökország",a:"USA"},
+  {id:"D6",g:"D",d:"2026-06-25",h:"Paraguay",a:"Ausztrália"},
+  {id:"E1",g:"E",d:"2026-06-14",h:"Németország",a:"Curaçao"},
+  {id:"E2",g:"E",d:"2026-06-14",h:"Elefántcsontpart",a:"Ecuador"},
+  {id:"E3",g:"E",d:"2026-06-20",h:"Németország",a:"Elefántcsontpart"},
+  {id:"E4",g:"E",d:"2026-06-20",h:"Ecuador",a:"Curaçao"},
+  {id:"E5",g:"E",d:"2026-06-25",h:"Ecuador",a:"Németország"},
+  {id:"E6",g:"E",d:"2026-06-25",h:"Curaçao",a:"Elefántcsontpart"},
+  {id:"F1",g:"F",d:"2026-06-14",h:"Hollandia",a:"Japán"},
+  {id:"F2",g:"F",d:"2026-06-14",h:"Svédország",a:"Tunézia"},
+  {id:"F3",g:"F",d:"2026-06-20",h:"Hollandia",a:"Svédország"},
+  {id:"F4",g:"F",d:"2026-06-20",h:"Tunézia",a:"Japán"},
+  {id:"F5",g:"F",d:"2026-06-25",h:"Japán",a:"Svédország"},
+  {id:"F6",g:"F",d:"2026-06-25",h:"Tunézia",a:"Hollandia"},
+  {id:"G1",g:"G",d:"2026-06-15",h:"Belgium",a:"Egyiptom"},
+  {id:"G2",g:"G",d:"2026-06-15",h:"Irán",a:"Új-Zéland"},
+  {id:"G3",g:"G",d:"2026-06-21",h:"Belgium",a:"Irán"},
+  {id:"G4",g:"G",d:"2026-06-21",h:"Új-Zéland",a:"Egyiptom"},
+  {id:"G5",g:"G",d:"2026-06-26",h:"Egyiptom",a:"Irán"},
+  {id:"G6",g:"G",d:"2026-06-26",h:"Új-Zéland",a:"Belgium"},
+  {id:"H1",g:"H",d:"2026-06-15",h:"Spanyolország",a:"Cabo Verde"},
+  {id:"H2",g:"H",d:"2026-06-15",h:"Szaúd-Arábia",a:"Uruguay"},
+  {id:"H3",g:"H",d:"2026-06-21",h:"Spanyolország",a:"Szaúd-Arábia"},
+  {id:"H4",g:"H",d:"2026-06-21",h:"Uruguay",a:"Cabo Verde"},
+  {id:"H5",g:"H",d:"2026-06-26",h:"Cabo Verde",a:"Szaúd-Arábia"},
+  {id:"H6",g:"H",d:"2026-06-26",h:"Uruguay",a:"Spanyolország"},
+  {id:"I1",g:"I",d:"2026-06-16",h:"Franciaország",a:"Szenegál"},
+  {id:"I2",g:"I",d:"2026-06-16",h:"Irak",a:"Norvégia"},
+  {id:"I3",g:"I",d:"2026-06-22",h:"Franciaország",a:"Irak"},
+  {id:"I4",g:"I",d:"2026-06-22",h:"Norvégia",a:"Szenegál"},
+  {id:"I5",g:"I",d:"2026-06-26",h:"Norvégia",a:"Franciaország"},
+  {id:"I6",g:"I",d:"2026-06-26",h:"Szenegál",a:"Irak"},
+  {id:"J1",g:"J",d:"2026-06-16",h:"Argentína",a:"Algéria"},
+  {id:"J2",g:"J",d:"2026-06-16",h:"Ausztria",a:"Jordánia"},
+  {id:"J3",g:"J",d:"2026-06-22",h:"Argentína",a:"Ausztria"},
+  {id:"J4",g:"J",d:"2026-06-22",h:"Jordánia",a:"Algéria"},
+  {id:"J5",g:"J",d:"2026-06-27",h:"Algéria",a:"Ausztria"},
+  {id:"J6",g:"J",d:"2026-06-27",h:"Jordánia",a:"Argentína"},
+  {id:"K1",g:"K",d:"2026-06-17",h:"Portugália",a:"DR Kongó"},
+  {id:"K2",g:"K",d:"2026-06-17",h:"Üzbegisztán",a:"Kolumbia"},
+  {id:"K3",g:"K",d:"2026-06-23",h:"Portugália",a:"Üzbegisztán"},
+  {id:"K4",g:"K",d:"2026-06-23",h:"Kolumbia",a:"DR Kongó"},
+  {id:"K5",g:"K",d:"2026-06-27",h:"Kolumbia",a:"Portugália"},
+  {id:"K6",g:"K",d:"2026-06-27",h:"DR Kongó",a:"Üzbegisztán"},
+  {id:"L1",g:"L",d:"2026-06-17",h:"Anglia",a:"Horvátország"},
+  {id:"L2",g:"L",d:"2026-06-17",h:"Ghána",a:"Panama"},
+  {id:"L3",g:"L",d:"2026-06-23",h:"Anglia",a:"Ghána"},
+  {id:"L4",g:"L",d:"2026-06-23",h:"Panama",a:"Horvátország"},
+  {id:"L5",g:"L",d:"2026-06-27",h:"Panama",a:"Anglia"},
+  {id:"L6",g:"L",d:"2026-06-27",h:"Horvátország",a:"Ghána"},
+];
+
+const KM=[
+  {id:"R32_1",r:"R32",d:"2026-06-28",lbl:"32-es – 1."},{id:"R32_2",r:"R32",d:"2026-06-29",lbl:"32-es – 2."},
+  {id:"R32_3",r:"R32",d:"2026-06-29",lbl:"32-es – 3."},{id:"R32_4",r:"R32",d:"2026-06-29",lbl:"32-es – 4."},
+  {id:"R32_5",r:"R32",d:"2026-06-30",lbl:"32-es – 5."},{id:"R32_6",r:"R32",d:"2026-06-30",lbl:"32-es – 6."},
+  {id:"R32_7",r:"R32",d:"2026-06-30",lbl:"32-es – 7."},{id:"R32_8",r:"R32",d:"2026-07-01",lbl:"32-es – 8."},
+  {id:"R32_9",r:"R32",d:"2026-07-01",lbl:"32-es – 9."},{id:"R32_10",r:"R32",d:"2026-07-01",lbl:"32-es – 10."},
+  {id:"R32_11",r:"R32",d:"2026-07-02",lbl:"32-es – 11."},{id:"R32_12",r:"R32",d:"2026-07-02",lbl:"32-es – 12."},
+  {id:"R32_13",r:"R32",d:"2026-07-02",lbl:"32-es – 13."},{id:"R32_14",r:"R32",d:"2026-07-03",lbl:"32-es – 14."},
+  {id:"R32_15",r:"R32",d:"2026-07-03",lbl:"32-es – 15."},{id:"R32_16",r:"R32",d:"2026-07-03",lbl:"32-es – 16."},
+  {id:"R16_1",r:"R16",d:"2026-07-04",lbl:"16-os – 1."},{id:"R16_2",r:"R16",d:"2026-07-04",lbl:"16-os – 2."},
+  {id:"R16_3",r:"R16",d:"2026-07-05",lbl:"16-os – 3."},{id:"R16_4",r:"R16",d:"2026-07-05",lbl:"16-os – 4."},
+  {id:"R16_5",r:"R16",d:"2026-07-06",lbl:"16-os – 5."},{id:"R16_6",r:"R16",d:"2026-07-06",lbl:"16-os – 6."},
+  {id:"R16_7",r:"R16",d:"2026-07-07",lbl:"16-os – 7."},{id:"R16_8",r:"R16",d:"2026-07-07",lbl:"16-os – 8."},
+  {id:"QF_1",r:"QF",d:"2026-07-09",lbl:"Negyeddöntő – 1."},{id:"QF_2",r:"QF",d:"2026-07-10",lbl:"Negyeddöntő – 2."},
+  {id:"QF_3",r:"QF",d:"2026-07-11",lbl:"Negyeddöntő – 3."},{id:"QF_4",r:"QF",d:"2026-07-11",lbl:"Negyeddöntő – 4."},
+  {id:"SF_1",r:"SF",d:"2026-07-14",lbl:"Elődöntő – 1."},{id:"SF_2",r:"SF",d:"2026-07-15",lbl:"Elődöntő – 2."},
+  {id:"3RD",r:"3RD",d:"2026-07-18",lbl:"3. helyért"},
+  {id:"FINAL",r:"FINAL",d:"2026-07-19",lbl:"🏆 Döntő"},
+];
+
+const FLAGS={
+  "Mexikó":"🇲🇽","Dél-Afrika":"🇿🇦","Dél-Korea":"🇰🇷","Csehország":"🇨🇿",
+  "Kanada":"🇨🇦","Bosznia-Hercegovina":"🇧🇦","Katar":"🇶🇦","Svájc":"🇨🇭",
+  "Brazília":"🇧🇷","Marokkó":"🇲🇦","Haiti":"🇭🇹","Skócia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Ausztrália":"🇦🇺","Törökország":"🇹🇷",
+  "Németország":"🇩🇪","Curaçao":"🇨🇼","Elefántcsontpart":"🇨🇮","Ecuador":"🇪🇨",
+  "Hollandia":"🇳🇱","Japán":"🇯🇵","Svédország":"🇸🇪","Tunézia":"🇹🇳",
+  "Belgium":"🇧🇪","Egyiptom":"🇪🇬","Irán":"🇮🇷","Új-Zéland":"🇳🇿",
+  "Spanyolország":"🇪🇸","Cabo Verde":"🇨🇻","Szaúd-Arábia":"🇸🇦","Uruguay":"🇺🇾",
+  "Franciaország":"🇫🇷","Szenegál":"🇸🇳","Irak":"🇮🇶","Norvégia":"🇳🇴",
+  "Argentína":"🇦🇷","Algéria":"🇩🇿","Ausztria":"🇦🇹","Jordánia":"🇯🇴",
+  "Portugália":"🇵🇹","DR Kongó":"🇨🇩","Üzbegisztán":"🇺🇿","Kolumbia":"🇨🇴",
+  "Anglia":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Horvátország":"🇭🇷","Ghána":"🇬🇭","Panama":"🇵🇦",
+};
+const GROUPS=["A","B","C","D","E","F","G","H","I","J","K","L"];
+const ROUNDS=["R32","R16","QF","SF","3RD","FINAL"];
+const ROUND_LBL={R32:"32-es",R16:"16-os",QF:"Negyeddöntő",SF:"Elődöntő","3RD":"3. helyért",FINAL:"🏆 Döntő"};
+const ADMIN_PASS="admin2026";
+
+// ── STATE ─────────────────────────────────────────────
+let users={}, results={}, knockoutTeams={};
+let currentUser=null, isAdmin=false;
+let activeTab="matches", matchesView="group", activeGroup="A", activeRound="R32";
+let adminView="group", adminGroup="A", adminRound="R32";
+
+// ── STORAGE ───────────────────────────────────────────
+async function loadAll(){
+  try{const u=await window.storage.get("vb26_users",true);if(u)users=JSON.parse(u.value);}catch(e){}
+  try{const r=await window.storage.get("vb26_results",true);if(r)results=JSON.parse(r.value);}catch(e){}
+  try{const k=await window.storage.get("vb26_knockout",true);if(k)knockoutTeams=JSON.parse(k.value);}catch(e){}
+}
+async function saveUsers(){try{await window.storage.set("vb26_users",JSON.stringify(users),true);}catch(e){}}
+async function saveResults(){try{await window.storage.set("vb26_results",JSON.stringify(results),true);}catch(e){}}
+async function saveKnockout(){try{await window.storage.set("vb26_knockout",JSON.stringify(knockoutTeams),true);}catch(e){}}
+
+// ── HELPERS ───────────────────────────────────────────
+function flag(t){return FLAGS[t]||"🏳️"}
+function fmtDate(d){return new Date(d).toLocaleDateString("hu-HU",{month:"long",day:"numeric",weekday:"short"})}
+function calcPts(tip,res){
+  if(!tip||res===undefined||res===null)return null;
+  if(tip.h===res.h&&tip.a===res.a)return 3;
+  const tw=tip.h>tip.a?"H":tip.h<tip.a?"A":"D";
+  const rw=res.h>res.a?"H":res.h<res.a?"A":"D";
+  return tw===rw?1:0;
+}
+function getTeam(id,side){return knockoutTeams[id+"_"+side]||"TBD"}
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+function show(id){document.getElementById(id).classList.remove("hidden")}
+function hide(id){document.getElementById(id).classList.add("hidden")}
+
+// ── AUTH ──────────────────────────────────────────────
+async function doLogin(){
+  const nm=document.getElementById("loginName").value.trim();
+  const pw=document.getElementById("loginPass").value.trim();
+  const err=document.getElementById("loginError");
+  err.classList.add("hidden");
+  if(!nm||!pw){err.textContent="Töltsd ki mindkét mezőt!";err.classList.remove("hidden");return;}
+  if(nm==="admin"&&pw===ADMIN_PASS){
+    isAdmin=true;currentUser="admin";
+    hide("loginScreen");show("adminScreen");
+    renderAdmin();return;
+  }
+  const key=nm.toLowerCase();
+  if(users[key]){if(users[key].pw!==pw){err.textContent="Hibás jelszó!";err.classList.remove("hidden");return;}}
+  else{users[key]={name:nm,pw,tips:{}};await saveUsers();}
+  currentUser=key;
+  hide("loginScreen");show("appScreen");
+  renderApp();
+}
+function doLogout(){
+  currentUser=null;isAdmin=false;
+  hide("appScreen");hide("adminScreen");show("loginScreen");
+  document.getElementById("loginName").value="";
+  document.getElementById("loginPass").value="";
+}
+
+// ── LEADERBOARD ───────────────────────────────────────
+function getLB(){
+  return Object.entries(users).map(([k,u])=>{
+    let pts=0,exact=0,partial=0;
+    [...GM,...KM].forEach(m=>{
+      const tip=u.tips?.[m.id];
+      const res=results[m.id];
+      if(tip&&res){const p=calcPts(tip,res);pts+=p;if(p===3)exact++;if(p===1)partial++;}
+    });
+    return{name:u.name,pts,exact,partial};
+  }).sort((a,b)=>b.pts-a.pts);
+}
+
+// ── MATCH CARD HTML ───────────────────────────────────
+function matchCardHTML(m,tip,res,admin=false){
+  const hTeam=m.h||(m.id?getTeam(m.id,"h"):"TBD");
+  const aTeam=m.a||(m.id?getTeam(m.id,"a"):"TBD");
+  const isTBD=hTeam==="TBD"||aTeam==="TBD";
+  const pts=calcPts(tip,res);
+  let ptsBadge="";
+  if(pts===3)ptsBadge=`<span class="pts-badge pts-3">✓ +3</span>`;
+  else if(pts===1)ptsBadge=`<span class="pts-badge pts-1">~ +1</span>`;
+  else if(pts===0&&tip&&res)ptsBadge=`<span class="pts-badge pts-0">✗ 0</span>`;
+
+  let resHTML=res?`<span class="result-badge">${res.h}:${res.a}</span>`:`<span class="no-result">–:–</span>`;
+
+  let bottomHTML="";
+  if(admin){
+    const hv=res?.h??"";const av=res?.a??"";
+    const ht=knockoutTeams[m.id+"_h"]||"";
+    const at=knockoutTeams[m.id+"_a"]||"";
+    const teamInputs=isTBD?`
+      <input class="team-input" id="ht_${m.id}" value="${ht}" placeholder="Hazai csapat">
+      <input class="team-input" id="at_${m.id}" value="${at}" placeholder="Vendég csapat">
+    `:"";
+    bottomHTML=`<div class="admin-input-row">
+      <span class="admin-label">Eredmény:</span>
+      ${teamInputs}
+      <input type="number" min="0" max="20" class="score-input" id="ah_${m.id}" value="${hv}" style="width:44px">
+      <span class="colon">:</span>
+      <input type="number" min="0" max="20" class="score-input" id="aa_${m.id}" value="${av}" style="width:44px">
+      <button class="btn-admin-save" onclick="adminSave('${m.id}',${isTBD})">Mentés</button>
+      ${res?`<span class="saved-mark">✓ ${res.h}:${res.a}</span>`:""}
+    </div>`;
+  } else {
+    if(isTBD&&!res){
+      bottomHTML=`<div class="tip-section"><span class="tbd-notice">Tipp az adminisztrátori párosítás után adható</span></div>`;
+    } else {
+      const th=tip?tip.h:"";const ta=tip?tip.a:"";
+      const savedCls=tip?"saved":"";
+      const savedTxt=tip?"✓ Mentve":"Mentés";
+      bottomHTML=`<div class="tip-section">
+        <div class="tip-label">A te tipped:</div>
+        <div class="tip-row">
+          <input type="number" min="0" max="20" class="score-input" id="th_${m.id}" value="${th}" placeholder="0" oninput="unsave('${m.id}')">
+          <span class="colon">:</span>
+          <input type="number" min="0" max="20" class="score-input" id="ta_${m.id}" value="${ta}" placeholder="0" oninput="unsave('${m.id}')">
+          <button class="btn-save ${savedCls}" id="sb_${m.id}" onclick="saveTip('${m.id}')">${savedTxt}</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  const lbl=m.lbl?` · ${m.lbl}`:"";
+  return `<div class="match-card">
+    <div class="match-meta"><span>${fmtDate(m.d)}${lbl}</span>${ptsBadge}</div>
+    <div class="match-body">
+      <div class="match-teams">
+        <span class="team-flag">${flag(hTeam)}</span>
+        <span class="team-name">${hTeam}</span>
+        ${resHTML}
+        <span class="team-name right">${aTeam}</span>
+        <span class="team-flag">${flag(aTeam)}</span>
+      </div>
+      ${bottomHTML}
+    </div>
+  </div>`;
+}
+
+// ── TIP SAVE ──────────────────────────────────────────
+async function saveTip(id){
+  const h=document.getElementById("th_"+id)?.value;
+  const a=document.getElementById("ta_"+id)?.value;
+  if(h===""||a==="")return;
+  const hh=parseInt(h),aa=parseInt(a);
+  if(isNaN(hh)||isNaN(aa))return;
+  users[currentUser].tips[id]={h:hh,a:aa};
+  await saveUsers();
+  const btn=document.getElementById("sb_"+id);
+  if(btn){btn.textContent="✓ Mentve";btn.classList.add("saved");}
+  showToast("✓ Tipp mentve!");
+  updateStats();
+}
+function unsave(id){
+  const btn=document.getElementById("sb_"+id);
+  if(btn){btn.textContent="Mentés";btn.classList.remove("saved");}
+}
+
+// ── ADMIN SAVE ────────────────────────────────────────
+async function adminSave(id,isTBD){
+  const h=document.getElementById("ah_"+id)?.value;
+  const a=document.getElementById("aa_"+id)?.value;
+  if(h!==""&&a!==""){
+    results[id]={h:parseInt(h),a:parseInt(a)};
+    await saveResults();
+  }
+  if(isTBD){
+    const ht=document.getElementById("ht_"+id)?.value;
+    const at=document.getElementById("at_"+id)?.value;
+    if(ht)knockoutTeams[id+"_h"]=ht;
+    if(at)knockoutTeams[id+"_a"]=at;
+    await saveKnockout();
+  }
+  showToast("✓ Mentve!");
+  renderAdmin();
+}
+
+// ── RENDER APP ────────────────────────────────────────
+function renderApp(){
+  document.getElementById("appWelcome").textContent="Üdv, "+users[currentUser]?.name+"!";
+  updateStats();
+  renderContent();
+}
+function updateStats(){
+  const lb=getLB();
+  const me=lb.find(u=>u.name.toLowerCase()===currentUser);
+  const rank=lb.findIndex(u=>u.name.toLowerCase()===currentUser)+1;
+  if(me){
+    document.getElementById("statsRow").innerHTML=`
+      <div class="stat-box"><div class="stat-val">🏆 ${me.pts}</div><div class="stat-label">pont</div></div>
+      <div class="stat-box"><div class="stat-val">📊 ${rank}.</div><div class="stat-label">helyezés</div></div>
+      <div class="stat-box"><div class="stat-val">✓ ${me.exact}</div><div class="stat-label">pontos találat</div></div>
+    `;
+  }
+}
+function switchTab(tab,el){
+  activeTab=tab;
+  document.querySelectorAll("#appScreen .tab-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  renderContent();
+}
+function renderContent(){
+  const c=document.getElementById("appContent");
+  if(activeTab==="matches") c.innerHTML=renderMatchesTab();
+  else c.innerHTML=renderLeaderboard();
+}
+function renderMatchesTab(){
+  let html=`<div class="view-toggle">
+    <button class="pill-btn ${matchesView==="group"?"active":""}" onclick="setView('group')">Csoportkör</button>
+    <button class="pill-btn ${matchesView==="knockout"?"active":""}" onclick="setView('knockout')">Egyenes kiesés</button>
+  </div>`;
+  if(matchesView==="group"){
+    html+=`<div class="group-scroll">`;
+    GROUPS.forEach(g=>html+=`<button class="pill-btn ${activeGroup===g?"active":""}" onclick="setGroup('${g}')">${g}</button>`);
+    html+=`</div>`;
+    GM.filter(m=>m.g===activeGroup).forEach(m=>{
+      html+=matchCardHTML(m,users[currentUser]?.tips?.[m.id],results[m.id]);
+    });
+  } else {
+    html+=`<div class="group-scroll">`;
+    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${activeRound===r?"active":""}" onclick="setRound('${r}')">${ROUND_LBL[r]}</button>`);
+    html+=`</div>`;
+    const ms=KM.filter(m=>m.r===activeRound);
+    const allTBD=ms.every(m=>getTeam(m.id,"h")==="TBD");
+    if(allTBD){
+      html+=`<div class="pending-box">⏳ Ezek a meccsek még nem kerültek kiírásra. Az admin beírja a párosításokat amint kiderülnek!</div>`;
+    } else {
+      ms.forEach(m=>{
+        const hTeam=getTeam(m.id,"h");const aTeam=getTeam(m.id,"a");
+        html+=matchCardHTML({...m,h:hTeam,a:aTeam},users[currentUser]?.tips?.[m.id],results[m.id]);
+      });
+    }
+  }
+  return html;
+}
+function renderLeaderboard(){
+  const lb=getLB();
+  let html=`<div class="lb-card"><div class="lb-header">🏆 Élő rangsor</div>`;
+  if(lb.length===0) html+=`<div class="lb-empty">Még nincs elég adat.</div>`;
+  lb.forEach((u,i)=>{
+    const colors=["#f59e0b","#94a3b8","#b45309"];
+    const bg=i<3?colors[i]:"#e5e7eb";
+    const fc=i<3?"#fff":"#555";
+    const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1;
+    const isMe=u.name.toLowerCase()===currentUser;
+    html+=`<div class="lb-row ${isMe?"me":""}">
+      <div class="rank-badge" style="background:${bg};color:${fc}">${medal}</div>
+      <div><div class="lb-name">${u.name}${isMe?" (te)":""}</div><div class="lb-sub">✓ ${u.exact} pontos · ~ ${u.partial} részes</div></div>
+      <div class="lb-pts">${u.pts}</div><div class="lb-pts-label">pont</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function setView(v){matchesView=v;renderContent();}
+function setGroup(g){activeGroup=g;renderContent();}
+function setRound(r){activeRound=r;renderContent();}
+
+// ── RENDER ADMIN ──────────────────────────────────────
+function switchAdminTab(tab,el){
+  adminView=tab;
+  document.querySelectorAll("#adminScreen .tab-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  renderAdmin();
+}
+function renderAdmin(){
+  const c=document.getElementById("adminContent");
+  let html="";
+  if(adminView==="group"){
+    html+=`<div class="group-scroll">`;
+    GROUPS.forEach(g=>html+=`<button class="pill-btn ${adminGroup===g?"active":""}" onclick="setAdminGroup('${g}')">${g}</button>`);
+    html+=`</div>`;
+    GM.filter(m=>m.g===adminGroup).forEach(m=>html+=matchCardHTML(m,null,results[m.id],true));
+  } else {
+    html+=`<div class="group-scroll">`;
+    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${adminRound===r?"active":""}" onclick="setAdminRound('${r}')">${ROUND_LBL[r]}</button>`);
+    html+=`</div>`;
+    KM.filter(m=>m.r===adminRound).forEach(m=>{
+      const hTeam=getTeam(m.id,"h");const aTeam=getTeam(m.id,"a");
+      const isTBD=hTeam==="TBD"||aTeam==="TBD";
+      html+=matchCardHTML({...m,h:hTeam,a:aTeam},null,results[m.id],true);
+    });
+    html+=`<div class="tbd-box">💡 TBD meccsekhez add meg a csapatneveket, majd mentsd az eredménnyel együtt.</div>`;
+  }
+  c.innerHTML=html;
+}
+function setAdminGroup(g){adminGroup=g;renderAdmin();}
+function setAdminRound(r){adminRound=r;renderAdmin();}
+
+// ── INIT ──────────────────────────────────────────────
+loadAll().then(()=>{});
+</script>
+</body>
+</html>
