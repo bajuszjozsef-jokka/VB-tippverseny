@@ -16,12 +16,6 @@ input{font-family:inherit}button{font-family:inherit;cursor:pointer}
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--g);color:var(--white);padding:10px 22px;border-radius:20px;font-size:.85rem;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* LOADING */
-#loadingScreen{min-height:100vh;background:linear-gradient(135deg,var(--g),var(--gm));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
-.loading-spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{color:rgba(255,255,255,.8);font-size:.9rem}
-
 /* LOGIN */
 #loginScreen{min-height:100vh;background:linear-gradient(135deg,var(--g),var(--gm));display:flex;align-items:center;justify-content:center;padding:20px}
 .login-box{background:var(--white);border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.3)}
@@ -117,14 +111,8 @@ input{font-family:inherit}button{font-family:inherit;cursor:pointer}
 
 <div id="toast"></div>
 
-<!-- LOADING -->
-<div id="loadingScreen">
-  <div class="loading-spinner"></div>
-  <div class="loading-text">Betöltés...</div>
-</div>
-
 <!-- LOGIN -->
-<div id="loginScreen" class="hidden">
+<div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
       <div>⚽</div>
@@ -176,25 +164,7 @@ input{font-family:inherit}button{font-family:inherit;cursor:pointer}
   <div class="content" id="adminContent"></div>
 </div>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-// ── FIREBASE CONFIG ────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyC75Hsm6EcxaRw_kW4Kbj0Th1Fty4P8Tu0",
-  authDomain: "vb-tippverseny.firebaseapp.com",
-  databaseURL: "https://vb-tippverseny-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "vb-tippverseny",
-  storageBucket: "vb-tippverseny.firebasestorage.app",
-  messagingSenderId: "32554132088",
-  appId: "1:32554132088:web:e6bc29f49f16da6cf0c38d"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
+<script>
 // ── DATA ──────────────────────────────────────────────
 const GM=[
   {id:"A1",g:"A",d:"2026-06-11",h:"Mexikó",a:"Dél-Afrika"},
@@ -316,42 +286,30 @@ let currentUser=null, isAdmin=false;
 let activeTab="matches", matchesView="group", activeGroup="A", activeRound="R32";
 let adminView="group", adminGroup="A", adminRound="R32";
 
-// ── FIREBASE STORAGE ──────────────────────────────────
-async function loadAll(){
-  try{const snap=await get(ref(db,"vb26/users"));if(snap.exists())users=snap.val();}catch(e){console.error("users load",e);}
-  try{const snap=await get(ref(db,"vb26/results"));if(snap.exists())results=snap.val();}catch(e){console.error("results load",e);}
-  try{const snap=await get(ref(db,"vb26/knockout"));if(snap.exists())knockoutTeams=snap.val();}catch(e){console.error("knockout load",e);}
+// ── FIREBASE ──────────────────────────────────────────
+const FB_URL="https://vb-tippverseny-default-rtdb.europe-west1.firebasedatabase.app";
+async function fbGet(path){
+  try{
+    const r=await fetch(FB_URL+path+".json");
+    if(!r.ok)return null;
+    return await r.json();
+  }catch(e){return null;}
 }
-async function saveUsers(){
-  try{await set(ref(db,"vb26/users"),users);}catch(e){console.error("saveUsers",e);}
-}
-async function saveResults(){
-  try{await set(ref(db,"vb26/results"),results);}catch(e){console.error("saveResults",e);}
-}
-async function saveKnockout(){
-  try{await set(ref(db,"vb26/knockout"),knockoutTeams);}catch(e){console.error("saveKnockout",e);}
+async function fbSet(path,data){
+  try{
+    await fetch(FB_URL+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  }catch(e){}
 }
 
-// Valós idejű rangsor figyelő – frissül ha bárki tippel
-function watchLive(){
-  onValue(ref(db,"vb26/users"),(snap)=>{
-    if(snap.exists()){
-      users=snap.val();
-      if(currentUser&&!isAdmin&&activeTab==="leaderboard") renderContent();
-      if(currentUser&&!isAdmin) updateStats();
-    }
-  });
-  onValue(ref(db,"vb26/results"),(snap)=>{
-    if(snap.exists()){
-      results=snap.val();
-      if(currentUser&&!isAdmin) renderContent();
-      if(currentUser&&isAdmin) renderAdmin();
-    }
-  });
-  onValue(ref(db,"vb26/knockout"),(snap)=>{
-    if(snap.exists()) knockoutTeams=snap.val();
-  });
+// ── STORAGE ───────────────────────────────────────────
+async function loadAll(){
+  const u=await fbGet("/vb26_users");if(u)users=u;
+  const r=await fbGet("/vb26_results");if(r)results=r;
+  const k=await fbGet("/vb26_knockout");if(k)knockoutTeams=k;
 }
+async function saveUsers(){await fbSet("/vb26_users",users);}
+async function saveResults(){await fbSet("/vb26_results",results);}
+async function saveKnockout(){await fbSet("/vb26_knockout",knockoutTeams);}
 
 // ── HELPERS ───────────────────────────────────────────
 function flag(t){return FLAGS[t]||"🏳️"}
@@ -421,7 +379,9 @@ function matchCardHTML(m,tip,res,admin=false){
   if(pts===3)ptsBadge=`<span class="pts-badge pts-3">✓ +3</span>`;
   else if(pts===1)ptsBadge=`<span class="pts-badge pts-1">~ +1</span>`;
   else if(pts===0&&tip&&res)ptsBadge=`<span class="pts-badge pts-0">✗ 0</span>`;
+
   let resHTML=res?`<span class="result-badge">${res.h}:${res.a}</span>`:`<span class="no-result">–:–</span>`;
+
   let bottomHTML="";
   if(admin){
     const hv=res?.h??"";const av=res?.a??"";
@@ -437,7 +397,7 @@ function matchCardHTML(m,tip,res,admin=false){
       <input type="number" min="0" max="20" class="score-input" id="ah_${m.id}" value="${hv}" style="width:44px">
       <span class="colon">:</span>
       <input type="number" min="0" max="20" class="score-input" id="aa_${m.id}" value="${av}" style="width:44px">
-      <button class="btn-admin-save" onclick="window.adminSave('${m.id}',${isTBD})">Mentés</button>
+      <button class="btn-admin-save" onclick="adminSave('${m.id}',${isTBD})">Mentés</button>
       ${res?`<span class="saved-mark">✓ ${res.h}:${res.a}</span>`:""}
     </div>`;
   } else {
@@ -450,14 +410,15 @@ function matchCardHTML(m,tip,res,admin=false){
       bottomHTML=`<div class="tip-section">
         <div class="tip-label">A te tipped:</div>
         <div class="tip-row">
-          <input type="number" min="0" max="20" class="score-input" id="th_${m.id}" value="${th}" placeholder="0" oninput="window.unsave('${m.id}')">
+          <input type="number" min="0" max="20" class="score-input" id="th_${m.id}" value="${th}" placeholder="0" oninput="unsave('${m.id}')">
           <span class="colon">:</span>
-          <input type="number" min="0" max="20" class="score-input" id="ta_${m.id}" value="${ta}" placeholder="0" oninput="window.unsave('${m.id}')">
-          <button class="btn-save ${savedCls}" id="sb_${m.id}" onclick="window.saveTip('${m.id}')">${savedTxt}</button>
+          <input type="number" min="0" max="20" class="score-input" id="ta_${m.id}" value="${ta}" placeholder="0" oninput="unsave('${m.id}')">
+          <button class="btn-save ${savedCls}" id="sb_${m.id}" onclick="saveTip('${m.id}')">${savedTxt}</button>
         </div>
       </div>`;
     }
   }
+
   const lbl=m.lbl?` · ${m.lbl}`:"";
   return `<div class="match-card">
     <div class="match-meta"><span>${fmtDate(m.d)}${lbl}</span>${ptsBadge}</div>
@@ -481,7 +442,6 @@ async function saveTip(id){
   if(h===""||a==="")return;
   const hh=parseInt(h),aa=parseInt(a);
   if(isNaN(hh)||isNaN(aa))return;
-  if(!users[currentUser].tips)users[currentUser].tips={};
   users[currentUser].tips[id]={h:hh,a:aa};
   await saveUsers();
   const btn=document.getElementById("sb_"+id);
@@ -544,19 +504,19 @@ function renderContent(){
 }
 function renderMatchesTab(){
   let html=`<div class="view-toggle">
-    <button class="pill-btn ${matchesView==="group"?"active":""}" onclick="window.setView('group')">Csoportkör</button>
-    <button class="pill-btn ${matchesView==="knockout"?"active":""}" onclick="window.setView('knockout')">Egyenes kiesés</button>
+    <button class="pill-btn ${matchesView==="group"?"active":""}" onclick="setView('group')">Csoportkör</button>
+    <button class="pill-btn ${matchesView==="knockout"?"active":""}" onclick="setView('knockout')">Egyenes kiesés</button>
   </div>`;
   if(matchesView==="group"){
     html+=`<div class="group-scroll">`;
-    GROUPS.forEach(g=>html+=`<button class="pill-btn ${activeGroup===g?"active":""}" onclick="window.setGroup('${g}')">${g}</button>`);
+    GROUPS.forEach(g=>html+=`<button class="pill-btn ${activeGroup===g?"active":""}" onclick="setGroup('${g}')">${g}</button>`);
     html+=`</div>`;
     GM.filter(m=>m.g===activeGroup).forEach(m=>{
       html+=matchCardHTML(m,users[currentUser]?.tips?.[m.id],results[m.id]);
     });
   } else {
     html+=`<div class="group-scroll">`;
-    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${activeRound===r?"active":""}" onclick="window.setRound('${r}')">${ROUND_LBL[r]}</button>`);
+    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${activeRound===r?"active":""}" onclick="setRound('${r}')">${ROUND_LBL[r]}</button>`);
     html+=`</div>`;
     const ms=KM.filter(m=>m.r===activeRound);
     const allTBD=ms.every(m=>getTeam(m.id,"h")==="TBD");
@@ -590,6 +550,7 @@ function renderLeaderboard(){
   html+=`</div>`;
   return html;
 }
+
 function setView(v){matchesView=v;renderContent();}
 function setGroup(g){activeGroup=g;renderContent();}
 function setRound(r){activeRound=r;renderContent();}
@@ -606,15 +567,16 @@ function renderAdmin(){
   let html="";
   if(adminView==="group"){
     html+=`<div class="group-scroll">`;
-    GROUPS.forEach(g=>html+=`<button class="pill-btn ${adminGroup===g?"active":""}" onclick="window.setAdminGroup('${g}')">${g}</button>`);
+    GROUPS.forEach(g=>html+=`<button class="pill-btn ${adminGroup===g?"active":""}" onclick="setAdminGroup('${g}')">${g}</button>`);
     html+=`</div>`;
     GM.filter(m=>m.g===adminGroup).forEach(m=>html+=matchCardHTML(m,null,results[m.id],true));
   } else {
     html+=`<div class="group-scroll">`;
-    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${adminRound===r?"active":""}" onclick="window.setAdminRound('${r}')">${ROUND_LBL[r]}</button>`);
+    ROUNDS.forEach(r=>html+=`<button class="pill-btn ${adminRound===r?"active":""}" onclick="setAdminRound('${r}')">${ROUND_LBL[r]}</button>`);
     html+=`</div>`;
     KM.filter(m=>m.r===adminRound).forEach(m=>{
       const hTeam=getTeam(m.id,"h");const aTeam=getTeam(m.id,"a");
+      const isTBD=hTeam==="TBD"||aTeam==="TBD";
       html+=matchCardHTML({...m,h:hTeam,a:aTeam},null,results[m.id],true);
     });
     html+=`<div class="tbd-box">💡 TBD meccsekhez add meg a csapatneveket, majd mentsd az eredménnyel együtt.</div>`;
@@ -624,26 +586,8 @@ function renderAdmin(){
 function setAdminGroup(g){adminGroup=g;renderAdmin();}
 function setAdminRound(r){adminRound=r;renderAdmin();}
 
-// Global függvények (onclick-ek miatt kell)
-window.doLogin=doLogin;
-window.doLogout=doLogout;
-window.switchTab=switchTab;
-window.switchAdminTab=switchAdminTab;
-window.saveTip=saveTip;
-window.unsave=unsave;
-window.adminSave=adminSave;
-window.setView=setView;
-window.setGroup=setGroup;
-window.setRound=setRound;
-window.setAdminGroup=setAdminGroup;
-window.setAdminRound=setAdminRound;
-
 // ── INIT ──────────────────────────────────────────────
-loadAll().then(()=>{
-  hide("loadingScreen");
-  show("loginScreen");
-  watchLive();
-});
+loadAll().then(()=>{});
 </script>
 </body>
 </html>
