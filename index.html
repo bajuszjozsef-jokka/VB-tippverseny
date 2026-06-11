@@ -344,7 +344,7 @@ async function doLogin(){
   }
   const key=nm.toLowerCase();
   if(users[key]){if(users[key].pw!==pw){err.textContent="Hibás jelszó!";err.classList.remove("hidden");return;}}
-  else{users[key]={name:nm,pw,tips:{}};await saveUsers();}
+  else{users[key]={name:nm,pw,tips:{}};await fbSet("/vb26_users/"+key,{name:nm,pw,tips:{}}); }
   currentUser=key;
   hide("loginScreen");show("appScreen");
   renderApp();
@@ -442,8 +442,10 @@ async function saveTip(id){
   if(h===""||a==="")return;
   const hh=parseInt(h),aa=parseInt(a);
   if(isNaN(hh)||isNaN(aa))return;
+  if(!users[currentUser]){showToast("❌ Hiba: töltsd újra az oldalt!");return;}
+  if(!users[currentUser].tips)users[currentUser].tips={};
   users[currentUser].tips[id]={h:hh,a:aa};
-  await saveUsers();
+  await fbSet("/vb26_users/"+currentUser+"/tips/"+id,{h:hh,a:aa});
   const btn=document.getElementById("sb_"+id);
   if(btn){btn.textContent="✓ Mentve";btn.classList.add("saved");}
   showToast("✓ Tipp mentve!");
@@ -587,7 +589,12 @@ function setAdminGroup(g){adminGroup=g;renderAdmin();}
 function setAdminRound(r){adminRound=r;renderAdmin();}
 
 // ── INIT ──────────────────────────────────────────────
-loadAll().then(()=>{});
+(async()=>{
+  const btn=document.querySelector('.btn-primary');
+  if(btn){btn.disabled=true;btn.textContent='Betöltés...';}
+  await loadAll();
+  if(btn){btn.disabled=false;btn.textContent='Belépés / Regisztráció';}
+})();
 </script>
 </body>
 </html>
